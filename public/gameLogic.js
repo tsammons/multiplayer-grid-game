@@ -1,11 +1,11 @@
 "use strict";
 var ctx, canvas;
-var gridWidth = 1000, 
-    gridHeight = 1000, 
-    tileLength = 20, 
+var tileLength = 20, 
     stepSize = 25,  
     myPosition = {xDisplacement: 0, yDisplacement: 0, radius: 0},
-    mySocketID;
+    mySocketID,
+    gridWidth,
+    gridHeight;
 
 
 // Setup gameboard
@@ -23,7 +23,9 @@ ctx.lineWidth = 1;
 var socket = io.connect('http://localhost:4000');
 
 socket.on('connected', (data) => {
-    mySocketID = data;
+    mySocketID = data.socketID;
+    gridWidth = data.gridWidth;
+    gridHeight = data.gridHeight;
     console.log('connected with socketID ', mySocketID);
 });
 

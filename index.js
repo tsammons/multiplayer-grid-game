@@ -4,6 +4,8 @@ var socket = require('socket.io');
 var gameInterval;
 var gameStarted = false;
 var playerArray = [];
+var gridWidth = 1000, 
+    gridHeight = 1000;
 
 // App setup
 var app = express();
@@ -19,7 +21,7 @@ var io = socket(server);
 
 io.on('connection', (socket) => {
     console.log('made socket connection', socket.id);
-    socket.emit('connected', socket.id);
+    socket.emit('connected', {socketID: socket.id, gridWidth: gridWidth, gridHeight: gridHeight} );
 
     if (!gameStarted) {
         console.log("Game loop starting");
