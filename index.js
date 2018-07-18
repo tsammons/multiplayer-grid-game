@@ -30,7 +30,8 @@ io.on('connection', (socket) => {
     playerArray.push({
         socketID: socket.id,
         positionX: 0,
-        positionY: 0
+        positionY: 0,
+        radius: 50
     });
 
     socket.on('move', (data) => {
