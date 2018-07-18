@@ -7,6 +7,18 @@ var gridWidth = 1000,
     myPosition = {X: 0, Y: 0, Radius: 0},
     mySocketID;
 
+
+// Setup gameboard
+document.addEventListener("keydown", keyDownHandler, false);
+document.getElementById("myCanvas").style.border = "thick solid #0000FF";
+canvas = document.getElementById('myCanvas');
+ctx = myCanvas.getContext('2d');
+canvas.width = 500;
+canvas.height = 500; 
+ctx.font = "10px Helvetica";
+ctx.lineWidth = 1;
+
+
 // Create socket connection
 var socket = io.connect('http://localhost:4000');
 
@@ -18,16 +30,6 @@ socket.on('connected', (data) => {
 socket.on('tick', (data) => {
     handleTick(data);
 });
-
-// Setup gameboard
-document.addEventListener("keydown", keyDownHandler, false);
-document.getElementById("myCanvas").style.border = "thick solid #0000FF";
-canvas = document.getElementById('myCanvas');
-ctx = myCanvas.getContext('2d');
-canvas.width = 500;
-canvas.height = 500; 
-ctx.font = "10px Helvetica";
-ctx.lineWidth = 1;
 
 function handleTick(data) {
     var myPlayer = data.find(x => x.socketID == mySocketID);
