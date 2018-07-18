@@ -4,6 +4,9 @@ var socket = require('socket.io');
 var fps = 60;
 var gameInterval;
 var gameStarted = false;
+var totalMass = 0,
+    initialPlayerRadius = 20,
+    initialTokenRadius = 5;
 var playerArray = [],
     tokenArray = [];
 var gridWidth = 1000, 
@@ -32,11 +35,12 @@ io.on('connection', (socket) => {
         gameInterval = setInterval(Tick, 1000 / fps);
     }
 
+    totalMass += Math.PI * Math.pow(initialPlayerRadius, 2);
     playerArray.push({
         socketID: socket.id,
         xDisplacement: 0,
         yDisplacement: 0,
-        radius: 20
+        radius: initialPlayerRadius
     });
 
     socket.on('move', (data) => {
@@ -47,6 +51,7 @@ io.on('connection', (socket) => {
         console.log('lost socket connection', socket.id);
         for (var i = playerArray.length - 1; i >= 0; --i) {
             if (playerArray[i].socketID == socket.id) {
+                totalMass -= Math.PI * Math.pow(playerArray[i].radius, 2);
                 playerArray.splice(i, 1);
             }
         }
@@ -55,6 +60,7 @@ io.on('connection', (socket) => {
             console.log("Game loop ended");
             clearInterval(gameInterval);
             gameStarted = false;
+            totalMass = 0;
         }
     });
 });
@@ -69,18 +75,22 @@ function Tick() {
 }
 
 function movePlayer(direction, distance, socketID) {
+    var playerIndex = playerArray.findIndex(x => x.socketID == socketID);
+    var playerMass = Math.PI * Math.pow(playerArray[playerIndex].radius, 2);
+    var moveSpeed = distance - ( distance * ( playerMass / totalMass ) );
+
     switch (direction) {
         case 'left':
-            playerArray.find(x => x.socketID == socketID).xDisplacement -= distance;
+            playerArray[playerIndex].xDisplacement -= moveSpeed;
             break;
         case 'up':
-            playerArray.find(x => x.socketID == socketID).yDisplacement -= distance;
+            playerArray[playerIndex].yDisplacement -= moveSpeed;
             break;
         case 'right':
-            playerArray.find(x => x.socketID == socketID).xDisplacement += distance;
+            playerArray[playerIndex].xDisplacement += moveSpeed;
             break;
         case 'down':
-            playerArray.find(x => x.socketID == socketID).yDisplacement += distance;
+            playerArray[playerIndex].yDisplacement += moveSpeed;
             break;
         default:
             break;
@@ -92,11 +102,12 @@ function populateTokens() {
     var minTokens = 250;
     var maxTokens = 500;
     var numberOfTokens = Math.floor(Math.random() * (maxTokens - minTokens)) + minTokens;
+    totalMass += numberOfTokens * (Math.PI * Math.pow(initialTokenRadius, 2));
     for (var i = 0; i < numberOfTokens; i++) {
         tokenArray.push({
             xPosition: Math.floor(Math.random() * gridWidth),
             yPosition: Math.floor(Math.random() * gridHeight),
-            radius: 5
+            radius: initialTokenRadius
         });
     }
 }
