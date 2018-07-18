@@ -1,10 +1,11 @@
 var express = require('express');
 var socket = require('socket.io');
 
+var fps = 60;
 var gameInterval;
 var gameStarted = false;
-var playerArray = [];
-var tokenArray = [];
+var playerArray = [],
+    tokenArray = [];
 var gridWidth = 1000, 
     gridHeight = 1000;
 
@@ -28,7 +29,7 @@ io.on('connection', (socket) => {
         console.log("Game loop starting");
         gameStarted = true;
         populateTokens();
-        gameInterval = setInterval(Tick, 20);
+        gameInterval = setInterval(Tick, 1000 / fps);
     }
 
     playerArray.push({
@@ -60,6 +61,7 @@ io.on('connection', (socket) => {
 
 // Game loop
 function Tick() {
+    checkForCollectedTokens();
     io.sockets.emit('tick', {
         playerArray: playerArray, 
         tokenArray: tokenArray
@@ -97,4 +99,32 @@ function populateTokens() {
             radius: 5
         });
     }
+}
+
+function checkForCollectedTokens() {
+    for (var i = playerArray.length - 1; i >= 0; --i) {
+        var tokensToSplice = [];
+        for (var j = 0; j < tokenArray.length; j ++) {
+            var playerX = playerArray[i].xDisplacement + gridWidth/2;
+            var playerY = playerArray[i].yDisplacement + gridHeight/2;
+            var distance = distanceBetween(playerX, playerY, tokenArray[j].xPosition, tokenArray[j].yPosition);
+            if (distance + tokenArray[j].radius <= playerArray[i].radius) {
+                tokensToSplice.push(j);
+                playerArray[i].radius = getNewRadius(playerArray[i].radius, tokenArray[j].radius);
+            }
+        }
+        tokensToSplice.forEach(i => tokenArray.splice(i, 1));
+    }
+}
+
+function distanceBetween(xOne, yOne, xTwo, yTwo) {
+    return Math.pow(Math.pow((xTwo - xOne), 2) + Math.pow((yTwo - yOne), 2), 0.5);
+}
+
+function getNewRadius(oldRadius, radiusOfCapture) {
+    var oldArea = Math.PI * Math.pow(oldRadius, 2);
+    var additionalArea = Math.PI * Math.pow(radiusOfCapture, 2);
+    var newArea = oldArea + additionalArea;
+    var newRadius = Math.pow((newArea / Math.PI), 0.5);
+    return newRadius;
 }
