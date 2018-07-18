@@ -34,7 +34,7 @@ socket.on('tick', (data) => {
 });
 
 function handleTick(data) {
-    var myPlayer = data.find(x => x.socketID == mySocketID);
+    var myPlayer = data.playerArray.find(x => x.socketID == mySocketID);
 
     myPosition = {
         xDisplacement: myPlayer.xDisplacement, 
@@ -58,28 +58,47 @@ function handleTick(data) {
         upperLeftY = gridHeight - canvas.height;
     }
 
-    drawGridSection(upperLeftX, upperLeftY, data);
+    drawGridSection(upperLeftX, upperLeftY, data.playerArray, data.tokenArray);
 }
 
-function drawGridSection(upperLeftX, upperLeftY, playerList) {
+function drawGridSection(upperLeftX, upperLeftY, playerArray, tokenArray) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawLines(upperLeftX, upperLeftY);
+    drawTokensInSection(upperLeftX, upperLeftY, tokenArray);
+    drawPlayersInSection(upperLeftX, upperLeftY, playerArray);
+}
+
+function drawLines(upperLeftX, upperLeftY) {
     var xOffset = tileLength - ( upperLeftX % tileLength );
     var yOffset = tileLength - ( upperLeftY % tileLength );
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     for (var i = xOffset; i < canvas.width + xOffset; i += tileLength) {
         drawLine(i, 0, i, canvas.height);
     }
-
     for (var i = yOffset; i < canvas.height + yOffset; i += tileLength) {
         drawLine(0, i, canvas.width, i);
     }
+}
 
-    playerList.forEach(p => {
+function drawTokensInSection(upperLeftX, upperLeftY, tokenArray) {
+    tokenArray.forEach(t => {
+        var posX = t.xPosition;
+        var posY = t.yPosition;
+
+        if ( upperLeftX <= (posX + t.radius) && (upperLeftX + canvas.width) >= (posX - t.radius) &&
+             upperLeftY <= (posY + t.radius) && (upperLeftY + canvas.height) >= (posY - t.radius) ) {
+            drawMark(posX - upperLeftX, posY - upperLeftY, t.radius, false);
+        }
+    });
+}
+
+function drawPlayersInSection(upperLeftX, upperLeftY, playerArray) {
+    playerArray.forEach(p => {
         var posX = p.xDisplacement + gridWidth/2;
         var posY = p.yDisplacement + gridHeight/2;
 
-        if ( upperLeftX <= (posX + p.radius) && (upperLeftX + canvas.width) >= (posX - p.radius) && upperLeftY <= (posY + p.radius) && (upperLeftY + canvas.height) >= (posY - p.radius) ) {
+        if ( upperLeftX <= (posX + p.radius) && (upperLeftX + canvas.width) >= (posX - p.radius) &&
+             upperLeftY <= (posY + p.radius) && (upperLeftY + canvas.height) >= (posY - p.radius) ) {
             if (p.socketID == mySocketID) {
                 drawMark(posX - upperLeftX, posY - upperLeftY, p.radius, true);
             } else {

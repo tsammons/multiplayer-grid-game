@@ -4,6 +4,7 @@ var socket = require('socket.io');
 var gameInterval;
 var gameStarted = false;
 var playerArray = [];
+var tokenArray = [];
 var gridWidth = 1000, 
     gridHeight = 1000;
 
@@ -26,6 +27,7 @@ io.on('connection', (socket) => {
     if (!gameStarted) {
         console.log("Game loop starting");
         gameStarted = true;
+        populateTokens();
         gameInterval = setInterval(Tick, 20);
     }
 
@@ -33,7 +35,7 @@ io.on('connection', (socket) => {
         socketID: socket.id,
         xDisplacement: 0,
         yDisplacement: 0,
-        radius: 50
+        radius: 20
     });
 
     socket.on('move', (data) => {
@@ -58,7 +60,10 @@ io.on('connection', (socket) => {
 
 // Game loop
 function Tick() {
-    io.sockets.emit('tick', playerArray);
+    io.sockets.emit('tick', {
+        playerArray: playerArray, 
+        tokenArray: tokenArray
+    });
 }
 
 function movePlayer(direction, distance, socketID) {
@@ -77,5 +82,19 @@ function movePlayer(direction, distance, socketID) {
             break;
         default:
             break;
+    }
+}
+
+function populateTokens() {
+    tokenArray = [];
+    var minTokens = 250;
+    var maxTokens = 500;
+    var numberOfTokens = Math.floor(Math.random() * (maxTokens - minTokens)) + minTokens;
+    for (var i = 0; i < numberOfTokens; i++) {
+        tokenArray.push({
+            xPosition: Math.floor(Math.random() * gridWidth),
+            yPosition: Math.floor(Math.random() * gridHeight),
+            radius: 5
+        });
     }
 }
