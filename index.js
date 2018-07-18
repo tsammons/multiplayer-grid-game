@@ -29,8 +29,8 @@ io.on('connection', (socket) => {
 
     playerArray.push({
         socketID: socket.id,
-        positionX: 0,
-        positionY: 0,
+        xDisplacement: 0,
+        yDisplacement: 0,
         radius: 50
     });
 
@@ -62,16 +62,16 @@ function Tick() {
 function movePlayer(direction, distance, socketID) {
     switch (direction) {
         case 'left':
-            playerArray.find(x => x.socketID == socketID).positionX -= distance;
+            playerArray.find(x => x.socketID == socketID).xDisplacement -= distance;
             break;
         case 'up':
-            playerArray.find(x => x.socketID == socketID).positionY -= distance;
+            playerArray.find(x => x.socketID == socketID).yDisplacement -= distance;
             break;
         case 'right':
-            playerArray.find(x => x.socketID == socketID).positionX += distance;
+            playerArray.find(x => x.socketID == socketID).xDisplacement += distance;
             break;
         case 'down':
-            playerArray.find(x => x.socketID == socketID).positionY += distance;
+            playerArray.find(x => x.socketID == socketID).yDisplacement += distance;
             break;
         default:
             break;
