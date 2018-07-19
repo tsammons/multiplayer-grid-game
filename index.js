@@ -38,8 +38,8 @@ io.on('connection', (socket) => {
     totalMass += Math.PI * Math.pow(initialPlayerRadius, 2);
     playerArray.push({
         socketID: socket.id,
-        xDisplacement: 0,
-        yDisplacement: 0,
+        xPosition: gridWidth/2 - 100 + Math.floor(Math.random() * 200),
+        yPosition: gridHeight/2 - 100 + Math.floor(Math.random() * 200),
         radius: initialPlayerRadius
     });
 
@@ -67,6 +67,7 @@ io.on('connection', (socket) => {
 
 // Game loop
 function Tick() {
+    checkForCapturedPlayers();
     checkForCollectedTokens();
     io.sockets.emit('tick', {
         playerArray: playerArray, 
@@ -81,16 +82,16 @@ function movePlayer(direction, distance, socketID) {
 
     switch (direction) {
         case 'left':
-            playerArray[playerIndex].xDisplacement -= moveSpeed;
+            playerArray[playerIndex].xPosition -= moveSpeed;
             break;
         case 'up':
-            playerArray[playerIndex].yDisplacement -= moveSpeed;
+            playerArray[playerIndex].yPosition -= moveSpeed;
             break;
         case 'right':
-            playerArray[playerIndex].xDisplacement += moveSpeed;
+            playerArray[playerIndex].xPosition += moveSpeed;
             break;
         case 'down':
-            playerArray[playerIndex].yDisplacement += moveSpeed;
+            playerArray[playerIndex].yPosition += moveSpeed;
             break;
         default:
             break;
@@ -112,14 +113,33 @@ function populateTokens() {
     }
 }
 
+function checkForCapturedPlayers() {
+    var playersToRemove = [];
+    for (var i = playerArray.length - 1; i >= 0; --i) {
+        var playerOne = playerArray[i];
+        for (var j = playerArray.length - 1; j >= 0; --j) {
+            var playerTwo = playerArray[j];
+            if (i != j) {
+                var distance = distanceBetween(playerOne.xPosition, playerOne.yPosition, playerTwo.xPosition, playerTwo.yPosition);
+                if (distance + playerTwo.radius <= playerOne.radius && playerOne.radius > playerTwo.radius) {
+                    playersToRemove.push(j);
+                    playerArray[i].radius = getNewRadius(playerOne.radius, playerTwo.radius);
+                }
+            }
+        }
+    }
+    playersToRemove.forEach(i => {
+        io.sockets.connected[playerArray[i].socketID].emit('youLose', playerArray[i].socketID);
+        playerArray.splice(i, 1);
+    });
+}
+
 function checkForCollectedTokens() {
     for (var i = playerArray.length - 1; i >= 0; --i) {
         var tokensToSplice = [];
         for (var j = 0; j < tokenArray.length; j ++) {
-            var playerX = playerArray[i].xDisplacement + gridWidth/2;
-            var playerY = playerArray[i].yDisplacement + gridHeight/2;
-            var distance = distanceBetween(playerX, playerY, tokenArray[j].xPosition, tokenArray[j].yPosition);
-            if (distance + tokenArray[j].radius <= playerArray[i].radius) {
+            var distance = distanceBetween(playerArray[i].xPosition, playerArray[i].yPosition, tokenArray[j].xPosition, tokenArray[j].yPosition);
+            if (distance + tokenArray[j].radius < playerArray[i].radius) {
                 tokensToSplice.push(j);
                 playerArray[i].radius = getNewRadius(playerArray[i].radius, tokenArray[j].radius);
             }

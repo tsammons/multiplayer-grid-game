@@ -2,10 +2,11 @@
 var ctx, canvas;
 var tileLength = 20, 
     stepSize = 25,  
-    myPosition = {xDisplacement: 0, yDisplacement: 0, radius: 0},
+    myPosition = {xPosition: 0, yPosition: 0, radius: 0},
     mySocketID,
     gridWidth,
-    gridHeight;
+    gridHeight,
+    activePlayer = false;
 
 
 // Setup gameboard
@@ -26,6 +27,7 @@ socket.on('connected', (data) => {
     mySocketID = data.socketID;
     gridWidth = data.gridWidth;
     gridHeight = data.gridHeight;
+    activePlayer = true;
     console.log('connected with socketID ', mySocketID);
 });
 
@@ -33,17 +35,30 @@ socket.on('tick', (data) => {
     handleTick(data);
 });
 
+socket.on('youLose', (data) => {
+    activePlayer = false;
+    document.getElementById("myCanvas").style.border = "thick solid #ff0000";
+});
+
+
 function handleTick(data) {
-    var myPlayer = data.playerArray.find(x => x.socketID == mySocketID);
+    var myIndex = data.playerArray.findIndex(x => x.socketID == mySocketID);
+
+    if (myIndex == -1) {
+        var upperLeftX = myPosition.xPosition - canvas.width/2;
+        var upperLeftY = myPosition.yPosition - canvas.height/2;
+        drawGridSection(upperLeftX, upperLeftY, data.playerArray, data.tokenArray);
+        return;
+    }
 
     myPosition = {
-        xDisplacement: myPlayer.xDisplacement, 
-        yDisplacement: myPlayer.yDisplacement, 
-        radius: myPlayer.radius
+        xPosition: data.playerArray[myIndex].xPosition, 
+        yPosition: data.playerArray[myIndex].yPosition, 
+        radius: data.playerArray[myIndex].radius
     };
 
-    var upperLeftX = myPosition.xDisplacement + gridWidth/2 - canvas.width/2;
-    var upperLeftY = myPosition.yDisplacement + gridHeight/2 - canvas.height/2;
+    var upperLeftX = myPosition.xPosition - canvas.width/2;
+    var upperLeftY = myPosition.yPosition- canvas.height/2;
 
     if (upperLeftX < 0) {
         upperLeftX = 0;
@@ -94,8 +109,8 @@ function drawTokensInSection(upperLeftX, upperLeftY, tokenArray) {
 
 function drawPlayersInSection(upperLeftX, upperLeftY, playerArray) {
     playerArray.forEach(p => {
-        var posX = p.xDisplacement + gridWidth/2;
-        var posY = p.yDisplacement + gridHeight/2;
+        var posX = p.xPosition;
+        var posY = p.yPosition;
 
         if ( upperLeftX <= (posX + p.radius) && (upperLeftX + canvas.width) >= (posX - p.radius) &&
              upperLeftY <= (posY + p.radius) && (upperLeftY + canvas.height) >= (posY - p.radius) ) {
@@ -109,30 +124,33 @@ function drawPlayersInSection(upperLeftX, upperLeftY, playerArray) {
 }
 
 function keyDownHandler(e) {
+    if (!activePlayer)
+        return;
+
     switch(e.keyCode) {
         case 37:
-            var position = myPosition.xDisplacement + gridWidth/2 - myPosition.radius;
+            var position = myPosition.xPosition - myPosition.radius;
             if (position > 0) {
                 var nextMoveSize = Math.min(stepSize, position);
                 socket.emit('move', { direction: 'left', distance: nextMoveSize });
             }
             break;
         case 38:
-            var position = myPosition.yDisplacement + gridHeight/2 - myPosition.radius;
+            var position = myPosition.yPosition - myPosition.radius;
             if (position > 0) {
                 var nextMoveSize = Math.min(stepSize, position);
                 socket.emit('move', { direction: 'up', distance: nextMoveSize });
             }
             break;
         case 39: 
-            var position = myPosition.xDisplacement + gridWidth/2 + myPosition.radius;
+            var position = myPosition.xPosition + myPosition.radius;
             if (position < gridWidth) {
                 var nextMoveSize = Math.min(stepSize, gridWidth - position);
                 socket.emit('move', { direction: 'right', distance: nextMoveSize });
             }
             break;
         case 40:
-            var position = myPosition.yDisplacement + gridHeight/2 + myPosition.radius;
+            var position = myPosition.yPosition + myPosition.radius;
             if (position < gridHeight) {
                 var nextMoveSize = Math.min(stepSize, gridHeight - position);
                 socket.emit('move', { direction: 'down', distance: nextMoveSize });
